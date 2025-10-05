@@ -11,6 +11,7 @@ An AI-powered FastAPI backend that lets authenticated users upload PDFs, parse t
 - [Running Locally (Optional)](#running-locally-optional)
 - [Environment Variables](#environment-variables)
 - [API Usage Examples](#api-usage-examples)
+- [Postman Collection](#postman-collection)
 - [Testing](#testing)
 - [Known Issues & Limitations](#known-issues--limitations)
 - [Future Improvements](#future-improvements)
@@ -205,6 +206,14 @@ curl -X GET "http://localhost:8000/chat-history" \
 ```bash
 curl http://localhost:8000/health
 ```
+
+## Postman Collection
+
+A ready-to-use Postman collection is available at `docs/chat-docs.postman_collection.json`.
+
+- Import the JSON file into Postman and set the `baseUrl` variable (defaults to `http://localhost:8000`).
+- Populate the `token` variable with the JWT returned from the login request.
+- When testing PDF uploads, attach a local PDF file to the `file` form-data field in the "Upload PDF" request.
 
 ## Testing
 
