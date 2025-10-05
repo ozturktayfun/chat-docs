@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import List
 
@@ -41,7 +41,7 @@ class PDFService:
             "pdf_id": str(file_id),
             "user_id": user_id,
             "filename": file.filename,
-            "upload_date": datetime.utcnow(),
+            "upload_date": datetime.now(timezone.utc),
             "is_parsed": False,
         }
         await self.db.pdf_metadata.insert_one(metadata)
@@ -72,7 +72,7 @@ class PDFService:
 
         await self.db.pdf_texts.update_one(
             {"pdf_id": pdf_id, "user_id": user_id},
-            {"$set": {"text": text, "parsed_at": datetime.utcnow()}},
+            {"$set": {"text": text, "parsed_at": datetime.now(timezone.utc)}},
             upsert=True,
         )
         await self.db.pdf_metadata.update_one({"pdf_id": pdf_id}, {"$set": {"is_parsed": True}})

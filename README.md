@@ -11,6 +11,7 @@ An AI-powered FastAPI backend that lets authenticated users upload PDFs, parse t
 - [Running Locally (Optional)](#running-locally-optional)
 - [Environment Variables](#environment-variables)
 - [API Usage Examples](#api-usage-examples)
+- [Testing](#testing)
 - [Known Issues & Limitations](#known-issues--limitations)
 - [Future Improvements](#future-improvements)
 - [Contributing](#contributing)
@@ -204,6 +205,23 @@ curl -X GET "http://localhost:8000/chat-history" \
 ```bash
 curl http://localhost:8000/health
 ```
+
+## Testing
+
+The project uses `pytest` for automated unit tests that cover authentication flows, PDF storage/parsing logic (with in-memory fakes), and key LLM utilities.
+
+```bash
+source .venv/bin/activate  # if you created a local virtualenv
+pytest
+```
+
+To run a focused subset, provide a file path or keyword filter:
+
+```bash
+pytest tests/test_pdf_service.py -k parse
+```
+
+> **Note:** Tests run entirely offline—MongoDB GridFS is mocked and the relational database uses an in-memory SQLite engine.
 
 ## Known Issues & Limitations
 - **Gemini dependency:** LLM-powered responses require a valid Gemini API key; without it, chat endpoints will fail.
