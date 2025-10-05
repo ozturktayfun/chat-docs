@@ -14,6 +14,7 @@ async def pdf_chat(
     current_user: User = Depends(get_authenticated_user),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ChatMessage:
+    """Send a user prompt to Gemini using the text of the selected PDF."""
     return await chat_service.chat(current_user, payload.message)
 
 
@@ -22,4 +23,5 @@ def chat_history(
     current_user: User = Depends(get_authenticated_user),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> ChatHistoryResponse:
+    """Return the user's chat history across all PDF sessions."""
     return chat_service.history(current_user)

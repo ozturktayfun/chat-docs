@@ -10,6 +10,7 @@ settings = get_settings()
 
 
 def _ensure_client_initialised() -> None:
+    """Initialise the Gemini client lazily the first time it is required."""
     if not settings.gemini_api_key:
         raise RuntimeError("Gemini API key is not configured")
 
@@ -19,6 +20,7 @@ def _ensure_client_initialised() -> None:
 
 
 def chunk_text(text: str, chunk_size: int = 2000, overlap: int = 200) -> List[str]:
+    """Split text into overlapping chunks so Gemini can handle long documents."""
     if len(text) <= chunk_size:
         return [text]
     chunks = []
@@ -33,6 +35,7 @@ def chunk_text(text: str, chunk_size: int = 2000, overlap: int = 200) -> List[st
 
 
 def build_prompt(context: str, question: str) -> str:
+    """Create a prompt for Gemini that embeds the document context and user question."""
     return (
         "You are a helpful assistant that answers questions about the provided document.\n"
         "Document context:\n"
@@ -44,6 +47,7 @@ def build_prompt(context: str, question: str) -> str:
 
 
 def ask_gemini(context_chunks: List[str], question: str) -> str:
+    """Send a question to Gemini and normalise the returned content to plain text."""
     _ensure_client_initialised()
     prompt = build_prompt("\n\n".join(context_chunks), question)
     model_name = settings.gemini_model or "gemini-1.5-flash-latest"

@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -16,7 +18,9 @@ async def upload_pdf(
     current_user: User = Depends(get_authenticated_user),
     pdf_service: PDFService = Depends(get_pdf_service),
 ) -> PDFMetadata:
-    return await pdf_service.upload_pdf(file, current_user.id)
+    """Store a PDF in GridFS and persist associated metadata."""
+    user_id = cast(int, current_user.id)
+    return await pdf_service.upload_pdf(file, user_id)
 
 
 @router.get("/pdf-list", response_model=list[PDFMetadata])
@@ -24,7 +28,9 @@ async def list_pdfs(
     current_user: User = Depends(get_authenticated_user),
     pdf_service: PDFService = Depends(get_pdf_service),
 ) -> list[PDFMetadata]:
-    return await pdf_service.list_pdfs(current_user.id)
+    """Return all PDF records owned by the authenticated user."""
+    user_id = cast(int, current_user.id)
+    return await pdf_service.list_pdfs(user_id)
 
 
 @router.post("/pdf-select")
@@ -34,11 +40,13 @@ async def select_pdf(
     pdf_service: PDFService = Depends(get_pdf_service),
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
-    await pdf_service.ensure_pdf_owned_by_user(payload.pdf_id, current_user.id)
-    user_record = db.get(User, current_user.id)
+    """Mark a PDF as the user's active document for subsequent chats."""
+    user_id = cast(int, current_user.id)
+    await pdf_service.ensure_pdf_owned_by_user(payload.pdf_id, user_id)
+    user_record = db.get(User, user_id)
     if user_record is None:
         raise HTTPException(status_code=404, detail="User not found")
-    user_record.selected_pdf_id = payload.pdf_id
+    setattr(user_record, "selected_pdf_id", payload.pdf_id)
     db.commit()
     db.refresh(user_record)
     return {"message": "PDF selected", "pdf_id": payload.pdf_id}
@@ -50,5 +58,7 @@ async def parse_pdf(
     current_user: User = Depends(get_authenticated_user),
     pdf_service: PDFService = Depends(get_pdf_service),
 ) -> dict[str, int | str | bool]:
-    text = await pdf_service.parse_pdf(payload.pdf_id, current_user.id)
+    """Trigger parsing for the selected PDF and report its text length."""
+    user_id = cast(int, current_user.id)
+    text = await pdf_service.parse_pdf(payload.pdf_id, user_id)
     return {"pdf_id": payload.pdf_id, "parsed": True, "text_length": len(text)}
