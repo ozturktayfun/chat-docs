@@ -16,6 +16,7 @@ An AI-powered FastAPI backend that lets authenticated users upload PDFs, parse t
 - [Known Issues & Limitations](#known-issues--limitations)
 - [Future Improvements](#future-improvements)
 - [Contributing](#contributing)
+- [Common Errors](#common-errors)
 
 ## Features
 - JWT-secured authentication for user registration and login.
@@ -231,6 +232,16 @@ pytest tests/test_pdf_service.py -k parse
 ```
 
 > **Note:** Tests run entirely offline—MongoDB GridFS is mocked and the relational database uses an in-memory SQLite engine.
+
+## Common Errors
+
+| Error Message | Likely Cause | Resolution |
+| ------------- | ------------ | ---------- |
+| `Gemini API key is not configured` | `GEMINI_API_KEY` environment variable is missing or empty. | Provide a valid Gemini API key in `.env` and restart the application. |
+| `Only PDF files are allowed` | Uploaded file has a `Content-Type` other than `application/pdf`. | Ensure the `file` field points to a PDF and the client sends the correct `Content-Type`. |
+| `File exceeds size limit` | PDF size exceeds the `MAX_FILE_SIZE` value (default 10 MB). | Upload a smaller PDF or increase the limit via environment variables. |
+| `No PDF selected` | `/pdf-select` was not called before `/pdf-chat` or `/pdf-parse`. | Call `/pdf-select` to choose an active PDF before invoking other routes. |
+| `Gemini response did not contain usable text` | Gemini API call failed or returned empty content. | Verify the API key, consider switching models, and check Gemini service status if it persists. |
 
 ## Known Issues & Limitations
 - **Gemini dependency:** LLM-powered responses require a valid Gemini API key; without it, chat endpoints will fail.
