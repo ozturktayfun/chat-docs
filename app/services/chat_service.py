@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, cast
 
 from fastapi import HTTPException, status
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from app.models.chat import ChatMessage, ChatSession
@@ -39,6 +40,7 @@ class ChatService:
             self.db.add(session)
             self.db.commit()
             self.db.refresh(session)
+            logger.info("Created new chat session session_id={} user_id={} pdf_id={}", session.id, user.id, user.selected_pdf_id)
         return session
 
     async def chat(self, user: User, message: str) -> ChatMessageSchema:
@@ -49,17 +51,20 @@ class ChatService:
         messages are persisted for later retrieval.
         """
         if user.selected_pdf_id is None:
+            logger.warning("Chat requested without selected PDF user_id={}", user.id)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No PDF selected")
 
         session = self._get_session(user)
         pdf_id = cast(str, user.selected_pdf_id)
         user_id = cast(int, user.id)
+        logger.info("Chat request started session_id={} user_id={} pdf_id={}", session.id, user_id, pdf_id)
         text = await self.pdf_service.get_parsed_text(pdf_id, user_id)
         context_chunks = chunk_text(text)
 
         try:
             response_text = ask_gemini(context_chunks, message)
         except Exception as exc:  # pragma: no cover - network/service errors
+            logger.error("Gemini request failed session_id={} user_id={} pdf_id={} error={}", session.id, user_id, pdf_id, exc)
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
         # Store both sides of the conversation to keep chronology intact.
@@ -69,6 +74,13 @@ class ChatService:
         self.db.commit()
         self.db.refresh(user_msg)
         self.db.refresh(bot_msg)
+        logger.info(
+            "Chat response stored session_id={} user_id={} user_msg_id={} bot_msg_id={}",
+            session.id,
+            user_id,
+            user_msg.id,
+            bot_msg.id,
+        )
 
         return ChatMessageSchema(
             role=cast(str, bot_msg.role),
@@ -90,4 +102,5 @@ class ChatService:
             for msg in session.messages:
                 messages.append(ChatMessageSchema(role=msg.role, content=msg.content, created_at=msg.created_at))
 
+        logger.info("Chat history retrieved user_id={} total_messages={}", user.id, len(messages))
         return ChatHistoryResponse(messages=messages, total=len(messages))
